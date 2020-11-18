@@ -9,7 +9,7 @@ class Item(database.Model):
     name = database.Column(database.String(256), nullable=False)
     description = database.Column(database.String(2048))
     start_date = database.Column(database.Date(), nullable=False)
-    end_date = database.Column(database.Date())
+    end_date = database.Column(database.Date(), nullable=False)
     first_price = database.Column(database.Float, nullable=False)
     last_price = database.Column(database.Float)
     #owner = database.Column(database.Integer, database.ForeignKey('user.id'))

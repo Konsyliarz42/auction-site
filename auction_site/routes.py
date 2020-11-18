@@ -6,7 +6,7 @@ from .models import Item
 from .models import database
 from .functions import value_form
 
-DATETIME = "%d.%m.%Y"#"%Y-%m-%d %H:%M"
+DATETIME = "%d.%m.%Y"
 
 api = Api()
 
@@ -21,7 +21,8 @@ class ItemsAll(Resource):
             items_list.append({
                 'id': item.id, 'name': item.name, 'descrition': item.description,
                 'start_date': item.start_date.strftime(DATETIME), 'end_date': item.end_date.strftime(DATETIME),
-                'first_price': item.first_price, 'last_price': item.last_price
+                'first_price': item.first_price, 'last_price': item.last_price,
+                '_links': {'self': request.url_root + f'item/{item.id}'}
             })
 
         return jsonify(items_list)
@@ -42,7 +43,6 @@ class ItemsAll(Resource):
                 DATETIME
             )
         )
-        print(item.start_date, item.end_date)
 
         if item.start_date > item.end_date:
             return {'error': "Start date is later than end date."}, 400
@@ -76,7 +76,8 @@ class ItemOne(Resource):
             return {
                 'id': item.id, 'name': item.name, 'descrition': item.description,
                 'start_date': item.start_date.strftime(DATETIME), 'end_date': item.end_date.strftime(DATETIME),
-                'first_price': item.first_price, 'last_price': item.last_price
+                'first_price': item.first_price, 'last_price': item.last_price,
+                '_links': {'self': request.url_root + f'item/{item.id}'}
             }, 200
 
         return {'Error': 'Item is not find'}, 404
@@ -101,6 +102,9 @@ class ItemOne(Resource):
                 DATETIME
             )
 
+            if item.start_date > item.end_date:
+                return {'error': "Start date is later than end date."}, 400
+
             database.session.add(item)
             database.session.commit()
 
@@ -114,7 +118,12 @@ class ItemOne(Resource):
 
         if item:
             form = request.get_json()
-            item.last_price = value_form(form, 'last_price', item.last_price)
+            value = value_form(form, 'last_price', item.last_price)
+
+            if value <= item.last_price:
+                return {'Error': 'Your price is lower'}, 400
+            else:
+                item.last_price = value
 
             database.session.add(item)
             database.session.commit()
