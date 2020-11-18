@@ -32,10 +32,10 @@ def create_items(quantity=1):
 #================================================================
 
 class TestRoutes(TestCase):
-    TESTING = True
-    SQLALCHEMY_DATABASE_URI = 'sqlite://'
 
     def create_app(self):
+        app.config['TESTING'] = True
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite://'
         return app
 
     
