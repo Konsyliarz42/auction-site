@@ -11,12 +11,10 @@ class Item(database.Model):
     description = database.Column(database.String(2048))
     start_date = database.Column(database.Date(), nullable=False)
     end_date = database.Column(database.Date(), nullable=False)
-    asking_price = database.Column(database.Float, nullable=False, default=0.00)
+    asking_price = database.Column(database.Float, default=0.00)
     current_price = database.Column(database.Float)
 
     owner_id = database.Column(database.Integer, database.ForeignKey('user.id'))
-    #owner = database.relationship("User", backref='owner')
-    #buyer = database.Column(database.Integer, database.ForeignKey('user.id'))
 
     def __str__(self):
         return f"Item: {self.name} ({self.current_price}zł)"
@@ -31,6 +29,7 @@ class User(database.Model, UserMixin):
     active = database.Column(database.Boolean)
     admin = database.Column(database.Boolean)
     register_date = database.Column(database.Date(), nullable=False)
+    password = database.Column(database.String(256), nullable=False)
 
     user_items = database.relationship('Item', backref='user')
 

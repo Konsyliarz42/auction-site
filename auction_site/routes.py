@@ -22,7 +22,7 @@ class LoginUser(Resource):
 
     def post(self):
         form = request.get_json()
-        user = User.query.all()[0]#filter_by(password=form['password'], nick=form['nick']).first()
+        user = User.query.filter_by(password=form['password'], nick=form['nick']).first() #all()[0]#
 
         if user:
             login_user(user)
@@ -78,6 +78,9 @@ class ItemsAll(Resource):
 
         if item.start_date > item.end_date:
             return {'error': "Start date is later than end date."}, 400
+
+        if item.start_date.date() < datetime.today().date():
+            return {'error': "Start date can't be earlier than today date."}, 400
             
         item.current_price = item.asking_price
 
@@ -134,14 +137,10 @@ class ItemOne(Resource):
             item.name = value_form(form, 'name', item.name)
             item.description = value_form(form, 'description', item.description)
             item.current_price = value_form(form, 'current_price', item.current_price)
-            item.start_date = datetime.strptime(
-                value_form(form, 'start_date', item.start_date.strftime(DATETIME)),
-                DATETIME
-            )
             item.end_date = datetime.strptime(
                 value_form(form, 'end_date', item.end_date.strftime(DATETIME)),
                 DATETIME
-            )
+            ).date()
 
             if item.start_date > item.end_date:
                 return {'error': "Start date is later than end date."}, 400
@@ -218,6 +217,7 @@ class UsersAll(Resource):
             nick = value_form(form, 'nick'),
             first_name = value_form(form, 'first_name'),
             last_name = value_form(form, 'last_name'),
+            password = value_form(form, 'password'),
             register_date = datetime.now(),
             active = True,
             admin = False,
@@ -225,7 +225,7 @@ class UsersAll(Resource):
         )
 
         if user.nick in [u.nick for u in User.query.all()]:
-            return {'error': f"{user.nick} is already in database"}
+            return {'error': f"{user.nick} is already in database"}, 400
 
         database.session.add(user)
         database.session.commit()
@@ -282,9 +282,10 @@ class UserOne(Resource):
             user.nick = value_form(form, 'nick', user.nick)
             user.first_name = value_form(form, 'first_name', user.first_name)
             user.last_name = value_form(form, 'last_name', user.last_name)
+            user.password = value_form(form, 'password', user.password)
 
             if user.nick in users_nicks and user.nick != user_name:
-                return {'error': f"{user.nick} is already in database"}
+                return {'error': f"{user.nick} is already in database"}, 400
 
             database.session.add(user)
             database.session.commit()
@@ -302,6 +303,11 @@ class UserOne(Resource):
             form = request.get_json()
             items_ids = value_form(form, 'user_items')
             items = [i for i in Item.query.all() if i.id in items_ids]
+
+            for item in items_ids:
+                if not Item.query.get(item):
+                    return {'Error': 'Item not found'}, 400
+
             user.user_items = items
             
             database.session.add(user)
