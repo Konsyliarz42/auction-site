@@ -21,7 +21,7 @@ def create_items(quantity=1):
             "name": fake.company(),
             "start_date": date1.strftime(DATETIME),
             "end_date": date2.strftime(DATETIME),
-            "first_price": round(random(), 2)
+            "asking_price": round(random(), 2)
         })
 
     if quantity == 1:
@@ -41,6 +41,14 @@ class TestRoutes(TestCase):
     
     def setUp(self):
         database.create_all()
+
+        user = {
+            'nick': 'tester',
+            'register_date': Faker().date_object().strftime(DATETIME),
+            'password': 'test'
+        }
+        self.client.post("/users", json=user)
+        self.client.post("/login", json={'nick': user['nick'], 'password': user['password']})
 
 
     def tearDown(self):
@@ -117,7 +125,7 @@ class TestRoutes(TestCase):
         item = create_items()
         self.client.post("/items", json=item)
 
-        item = {"last_price": item['first_price'] + randint(1, 10)}
+        item = {"current_price": item['asking_price'] + randint(1, 10)}
         response = self.client.patch("/item/1", json=item)
         self.assertEqual(response.status_code, 200)
 
@@ -127,13 +135,13 @@ class TestRoutes(TestCase):
         item = create_items()
         self.client.post("/items", json=item)
 
-        item = {"last_price": item['first_price'] - randint(1, 10)}
+        item = {"current_price": item['asking_price'] - randint(1, 10)}
         response = self.client.patch("/item/1", json=item)
         self.assertEqual(response.status_code, 400)
 
     # Rise item's price when database is empty
     def test_patch_item_empty_database(self):
-        item = {"last_price": randint(1, 10)}
+        item = {"current_price": randint(1, 10)}
         response = self.client.patch("/item/1", json=item)
         self.assertEqual(response.status_code, 404)
 
