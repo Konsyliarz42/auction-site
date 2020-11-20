@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from flask import Flask
 from flask_testing import TestCase
 
-from . import app, database, DATETIME
+from . import app, database, DATETIME, User
 
 def create_items(quantity=1):
     """Returns list of random items."""
@@ -66,6 +66,12 @@ class TestRoutes(TestCase):
             'password': 'test'
         }
         self.client.post("/users", json=user)
+
+        tester = User.query.get(1)
+        tester.admin = True
+
+        database.session.add(tester)
+        database.session.commit()
         self.client.post("/login", json={'nick': user['nick'], 'password': user['password']})
 
 

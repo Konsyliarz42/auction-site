@@ -17,7 +17,7 @@ api = Api()
 class LoginUser(Resource):
 
     def get(self):
-        pass
+        return {'info': "login page"}, 200
 
 
     def post(self):
@@ -26,9 +26,23 @@ class LoginUser(Resource):
 
         if user:
             login_user(user)
-            return {'info': f"{user.nick} is login now"}, 200
+            user.active = True
+            database.session.add(user)
+            database.session.commit()
+
+            return {'login': user.nick}, 200
 
         return {'error': "Bad nick or password"}
+
+    
+    def patch(self):
+        nick = current_user.nick
+        current_user.active = False
+        database.session.add(current_user)
+        database.session.commit()
+        logout_user()
+
+        return {'logout': nick}, 200
 
 
 #==============================================================
@@ -65,6 +79,7 @@ class ItemsAll(Resource):
             name = value_form(form, 'name'),
             description = value_form(form, 'description'),
             asking_price = value_form(form, 'asking_price'),
+            current_price = value_form(form, 'asking_price'),
             start_date = datetime.strptime(
                 value_form(form, 'start_date'), 
                 DATETIME
@@ -81,8 +96,6 @@ class ItemsAll(Resource):
 
         if item.start_date.date() < datetime.today().date():
             return {'error': "Start date can't be earlier than today date."}, 400
-            
-        item.current_price = item.asking_price
 
         database.session.add(item)
         database.session.commit()
@@ -92,6 +105,9 @@ class ItemsAll(Resource):
 
     @login_required
     def delete(self):
+        if current_user.admin ==  False:
+            return {'error': "You have not permissions to deletes"}, 401
+
         items = Item.query.all()
 
         for item in items:
@@ -131,6 +147,9 @@ class ItemOne(Resource):
         item = Item.query.get(id)
 
         if item:
+            if item.owner_id != current_user.id and current_user.admin == False:
+                return {'Error': 'Item is not yours'}, 401
+
             form = request.get_json()
             item_name = item.name
 
@@ -179,6 +198,9 @@ class ItemOne(Resource):
         item = Item.query.get(id)
 
         if item:
+            if item.owner_id != current_user.id and current_user.admin == False:
+                return {'Error': 'Item is not yours'}, 401
+
             database.session.delete(item)
             database.session.commit()
 
@@ -235,6 +257,9 @@ class UsersAll(Resource):
 
     @login_required
     def delete(self):
+        if current_user.admin ==  False:
+            return {'error': "You have not permissions to deletes"}, 401
+            
         users = User.query.all()
 
         for user in users:
@@ -271,10 +296,13 @@ class UserOne(Resource):
 
 
     @login_required
-    def put(self, id):
+    def put(self, id): 
         user = User.query.get(id)
 
         if user:
+            if user.id != current_user.id and current_user.admin == False:
+                return {'error': "You have not permissions to edit."}, 401
+
             form = request.get_json()
             user_name = user.nick
             users_nicks = [u.nick for u in User.query.all()]
@@ -300,6 +328,9 @@ class UserOne(Resource):
         user = User.query.get(id)
 
         if user:
+            if user.id != current_user.id and current_user.admin == False:
+                return {'error': "You have not permissions to edit."}, 401
+
             form = request.get_json()
             items_ids = value_form(form, 'user_items')
             items = [i for i in Item.query.all() if i.id in items_ids]
@@ -323,10 +354,13 @@ class UserOne(Resource):
         user = User.query.get(id)
 
         if user:
+            if user.id != current_user.id and current_user.admin == False:
+                return {'error': "You can't delete other users"}, 401
+
             database.session.delete(user)
             database.session.commit()
             logout_user()
 
             return {'deleted': user.nick, 'info': "You are logout now"}, 200
 
-        return {'Error': 'User is not find'}, 404
+        return {'error': 'User is not find'}, 404
