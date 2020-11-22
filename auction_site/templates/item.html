@@ -29,7 +29,6 @@
         <div class="col-4 container border rounded card-header text-center my-auto">
             <h5>Aktualna cena: {{ item.current_price }} zł</h5>
             <p class="text-muted mb-0">Cena wywoławcza: {{ item.asking_price }} zł</p>
-
             {% if user and today_date <= item.end_date %}
                 <form action="" method="post" class="mt-4">
                     {{ form.hidden_tag() }}

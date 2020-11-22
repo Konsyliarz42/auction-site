@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+{% if not users %}
+    <div class="container my-4">
+        <blockquote class="blockquote text-center">
+            <h1 class="mb-0 display-4">Niestety w tej chwili nasza baza danych nie posiada użytkowników :(</h1>
+            <span class="text-secondary">Szybko załóż konto i zostań naszym pierwszym użytkownikiem.</span>
+        </blockquote>
+    </div>
+{% endif %}
+
+<div class="row px-4">
+    {% for u in users %}
+        <div class="col-3 container">
+            <div class="card shadow my-4" style="width: 512px;">
+                <div class="card-header">
+                    <div class="row">
+                        <h5 class="col my-auto">{{ u.nick }}</h5>
+                        {% if user.id == u.id %}
+                            <a href="/user/{{ user.id }}" class="btn btn-sm btn-outline-primary">Edytuj</a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-text">
+                        <ul>
+                            <p>Imię: {{ u.first_name }}</p>
+                            <p>Nazwisko: {{ u.last_name }}</p>
+                            <p>Data dołączenia: {{ u.register_date }}</p>
+                            <p>Obecnie aktywny: {{ u.active }}</p>
+                            <p>Posiadane przedmoty: {{ u.user_items|length }}</p>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+    
+
+
+{% endblock %}

@@ -31,17 +31,17 @@
             </ul>
 
             {% if not user %}
-            <ul class="my-auto">
-                <a class="nav-item btn btn-outline-info" href="/login">Zaloguj się</a>
-                <a class="nav-item btn btn-outline-info" href="/register">Zarejestruj się</a>
-            </ul>
+                <ul class="my-auto">
+                    <a class="nav-item btn btn-outline-info" href="/login">Zaloguj się</a>
+                    <a class="nav-item btn btn-outline-info" href="/register">Zarejestruj się</a>
+                </ul>
             {% else %}
                 <p class="lead text-white my-auto mr-2">{{ user.nick }}</p>
-                <form action="" method="POST">
+                <form action="/home" method="POST">
                     <button type="submit" class="btn btn-outline-info">Wyloguj</button>
                 </form>   
                 {% if user and user.admin == true %}
-                <a class="btn btn-outline-info ml-2" href="/admin">Pandel administratora</a>
+                    <a class="btn btn-outline-info ml-2" href="/admin">Pandel administratora</a>
                 {% endif %}        
             {% endif %}
         </nav>      

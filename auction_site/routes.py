@@ -7,7 +7,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from .models import Item, User
 from .models import database
 from .functions import value_form
-from .forms import LoginForm, RegisterForm, NewPriceForm
+from .forms import LoginForm, RegisterForm, NewPriceForm, EditUser
 
 
 DATETIME = "%d.%m.%Y"
@@ -167,3 +167,61 @@ class ItemOne(Resource):
                 database.session.commit()
         
             return make_response(render_template('item.html', user=user, item=item, User=User, today_date=today_date, form=form), 200)
+
+
+@api.route('/users')
+class UsersAll(Resource):
+
+    def get(self):
+        users = User.query.all()
+        user = None
+
+        if current_user.is_authenticated:
+            user = current_user
+
+        return make_response(render_template('users.html', user=user, users=users, User=User), 200)
+
+
+@api.route('/user/<int:user_id>')
+class UserOne(Resource):
+
+    @login_required
+    def get(self, user_id):
+        user = current_user
+        form = EditUser()
+        form.nick.default = user.nick
+        form.first_name.default = user.first_name
+        form.last_name.default = user.last_name
+        form.process()
+
+        return make_response(render_template('user.html', user=user, form=form), 200)
+
+
+    @login_required
+    def post(self, user_id):
+        user = current_user
+        form = EditUser(user=user)
+
+        if form.validate_on_submit():
+            user.nick = form.nick.data
+            user.first_name = form.first_name.data
+            user.last_name = form.last_name.data
+
+            if request.form.get('new_password') and check_password_hash(user.password, request.form.get('old_password')):
+                user.password = generate_password_hash(request.form.get('new_password'), 'sha256')
+
+            for item in user.user_items:
+                if request.form.get('delitem' + str(item.id)):
+                    user.user_items.remove(item)
+                    database.session.delete(item)
+                
+            database.session.add(user)
+            database.session.commit()
+
+            if request.form.get('deluser'):
+                database.session.delete(user)
+                database.session.commit()
+                logout_user()
+                return redirect(api.url_for('home'), 200)
+
+        return make_response(render_template('user.html', user=user, form=form), 200)

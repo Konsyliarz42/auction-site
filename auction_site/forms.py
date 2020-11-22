@@ -16,3 +16,9 @@ class RegisterForm(FlaskForm):
 
 class NewPriceForm(FlaskForm):
     new_price = FloatField('Nowa cena')
+
+
+class EditUser(FlaskForm):
+    nick = StringField('Nick', validators=[Length(max=256)])
+    first_name = StringField('Imię', validators=[Length(max=256)])
+    last_name = StringField('Nazwisko', validators=[Length(max=256)])
