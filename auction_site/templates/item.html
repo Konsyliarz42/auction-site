@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container shadow my-4">
+    {% set trows = item.name|length/64 %}
+    {% for i in range(trows|round(0, "ceil")|int) %}
+        <h1 class="">{{ item.name[i*64:64 + (i*64) ] }}</h1>
+    {% endfor %}
+
+    <div class="row">
+
+            <div class="col-4 container mt-4">
+                <p class="lead my-0">Data rozpoczęcia:</p>
+                <strong>{{item.start_date}}</strong>
+                <p class="mt-4 mb-0">Właściciel:</p>
+                <strong>{{ User.query.get(item.owner_id).nick }}</strong>
+                <small class="text-muted">Id: {{ item.owner_id }}</small>
+            </div>
+
+            <div class="col-4 container mt-4">
+                <p class="lead my-0">Data zakończenia:</p>
+                <strong>{{item.end_date}}</strong>
+                <p class="mt-4 mb-0">Najwyższą cenę dał:</p>
+                <strong>{{ User.query.get(item.winner_id).nick }}</strong>
+                <small class="text-muted">Id: {{ item.winner_id }}</small>
+            </div>
+        
+        <div class="col-4 container border rounded card-header text-center my-auto">
+            <h5>Aktualna cena: {{ item.current_price }} zł</h5>
+            <p class="text-muted mb-0">Cena wywoławcza: {{ item.asking_price }} zł</p>
+
+            {% if user and today_date <= item.end_date %}
+                <form action="" method="post" class="mt-4">
+                    {{ form.hidden_tag() }}
+                    {{ wtf.form_field(form.new_price) }}
+                    <button type="submit" class="btn btn-block btn-primary">Podbij cenę</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <p class="mt-4 mb-0">Opis:</p>
+    <div class="container">
+        <p class="lead text-justify my-auto">{{ item.description }}</p>
+    </div>
+
+    <p class="text-muted text-right">Id: {{ item.id }}</p>
+</div>
+
+{% endblock %}

@@ -15,6 +15,7 @@ class Item(database.Model):
     current_price = database.Column(database.Float)
 
     owner_id = database.Column(database.Integer, database.ForeignKey('user.id'))
+    winner_id = database.Column(database.Integer)
 
     def __str__(self):
         return f"Item: {self.name} ({self.current_price}zł)"

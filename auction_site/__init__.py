@@ -4,6 +4,7 @@ from config import Config
 from flask_migrate import Migrate
 from flask_login import LoginManager
 from flask_admin import Admin, AdminIndexView
+from flask_bootstrap import Bootstrap
 
 from . import models
 from . import routes
@@ -28,9 +29,11 @@ admin = Admin(app)
 admin.add_view(AdminModelView(models.User, models.database.session))
 admin.add_view(AdminModelView(models.Item, models.database.session))
 
+Bootstrap(app)
+
 @login_manager.user_loader
 def load_user(user_id):
-    return models.User.query.get(int(user_id))
+    return models.User.query.get(user_id)
 
 @app.shell_context_processor
 def make_shell_context():

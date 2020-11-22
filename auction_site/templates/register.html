@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container border shadow p-2">
+    <h4 class="text-center">Rejestracja w serwisie</h4>
+    <form action="" method="post">
+        {{ form.hidden_tag() }}
+        {{ wtf.form_field(form.nick) }}
+        {{ wtf.form_field(form.password) }}
+        {{ wtf.form_field(form.first_name) }}
+        {{ wtf.form_field(form.last_name) }}
+        <button type="submit" class="btn btn-primary">Zarejestruj</button>
+    </form>
+</div>
+{% endblock %}

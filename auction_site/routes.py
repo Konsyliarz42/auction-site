@@ -1,75 +1,107 @@
 from datetime import datetime
-from flask import jsonify, request
+from flask import jsonify, request, render_template, make_response, redirect, url_for
 from flask_restx import Api, Resource
 from flask_login import login_user, logout_user, current_user, login_required
+from werkzeug.security import generate_password_hash, check_password_hash
 
 from .models import Item, User
 from .models import database
 from .functions import value_form
+from .forms import LoginForm, RegisterForm, NewPriceForm
+
 
 DATETIME = "%d.%m.%Y"
 
 api = Api()
 
-#==============================================================
-
-@api.route('/login')
-class LoginUser(Resource):
+@api.route('/home')
+class Home(Resource):
 
     def get(self):
-        return {'info': "login page"}, 200
+        user = None
 
+        if current_user.is_authenticated:
+            user = current_user
 
-    def post(self):
-        form = request.get_json()
-        user = User.query.filter_by(password=form['password'], nick=form['nick']).first() #all()[0]#
-
-        if user:
-            login_user(user)
-            user.active = True
-            database.session.add(user)
-            database.session.commit()
-
-            return {'login': user.nick}, 200
-
-        return {'error': "Bad nick or password"}
+        return make_response(render_template('base.html', user=user), 200)
 
     
-    def patch(self):
-        nick = current_user.nick
+    def post(self):
         current_user.active = False
         database.session.add(current_user)
         database.session.commit()
         logout_user()
+        return redirect('home', 200)
+   
 
-        return {'logout': nick}, 200
+@api.route('/register')
+class Register(Resource):
+
+    def get(self):
+        form = RegisterForm()
+        return make_response(render_template('register.html', form=form), 200)
 
 
-#==============================================================
+    def post(self):
+        form = RegisterForm()
+        
+        if form.validate_on_submit():
+            user = User(
+                nick = form.nick.data,
+                first_name = form.first_name.data,
+                last_name = form.last_name.data,
+                password = generate_password_hash(form.password.data, 'sha256'),
+                register_date = datetime.now(),
+                active = True,
+                admin = False,
+                user_items = []
+            )
+
+            if user.nick in [u.nick for u in User.query.all()]:
+                return make_response(render_template('register.html', form=form), 400)
+
+            database.session.add(user)
+            database.session.commit()
+
+            return redirect('home', 200)
+
+@api.route('/login')
+class Login(Resource):
+
+    def get(self):
+        form = LoginForm()
+        return make_response(render_template('login.html', form=form), 200)
+
+
+    def post(self):
+
+        form = LoginForm()
+        
+        if form.validate_on_submit():
+            user = User.query.filter_by(nick=form.nick.data).first()
+
+            if user and check_password_hash(user.password, form.password.data):
+                login_user(user)
+                user.active = True
+                database.session.add(user)
+                database.session.commit()
+                return redirect('home', 200)
+
+        return make_response(render_template('login.html', form=form), 400)
+
 
 @api.route('/items')
 class ItemsAll(Resource):
 
     def get(self):
         items = Item.query.all()
-        items_list = list()
+        user = None
+        today_date = datetime.today().date()
 
-        for item in items:
-            owner = User.query.get(item.owner_id)
-            owner = {'id': owner.id, 'nick': owner.nick}
+        if current_user.is_authenticated:
+            user = current_user
 
-            items_list.append({
-                'id': item.id, 'name': item.name, 'descrition': item.description,
-                'start_date': item.start_date.strftime(DATETIME), 'end_date': item.end_date.strftime(DATETIME),
-                'asking_price': item.asking_price, 'current_price': item.current_price,
-                'owner': owner, 
-                '_links': {
-                    'self': request.url_root + f'item/{item.id}',
-                    'owner': request.url_root + f"user/{owner['id']}"
-                }
-            })
-
-        return jsonify(items_list)
+        return make_response(render_template('items.html', user=user, items=items, User=User, today_date=today_date), 200)
 
 
     @login_required
@@ -88,7 +120,7 @@ class ItemsAll(Resource):
                 value_form(form, 'end_date'), 
                 DATETIME
             ),
-            owner_id = current_user.id
+            owner_id = 1
         )
 
         if item.start_date > item.end_date:
@@ -102,265 +134,36 @@ class ItemsAll(Resource):
 
         return {'added': item.name}, 201
 
-
-    @login_required
-    def delete(self):
-        if current_user.admin ==  False:
-            return {'error': "You have not permissions to deletes"}, 401
-
-        items = Item.query.all()
-
-        for item in items:
-            database.session.delete(item)
-
-        database.session.commit()
-
-        return {'deleted': 'all items'}, 200
-
-
-@api.route('/item/<int:id>')
+@api.route('/item/<int:item_id>')
 class ItemOne(Resource):
 
-    def get(self, id):
-        item = Item.query.get(id)
+    def get(self, item_id):
+        item = Item.query.get(item_id)
+        user = None
+        today_date = datetime.today().date()
+        form = NewPriceForm()
+
+        if current_user.is_authenticated:
+            user = current_user
 
         if item:
-            owner = User.query.get(item.owner_id)
-            owner = {'id': owner.id, 'nick': owner.nick}
-
-            return {
-                'id': item.id, 'name': item.name, 'descrition': item.description,
-                'start_date': item.start_date.strftime(DATETIME), 'end_date': item.end_date.strftime(DATETIME),
-                'asking_price': item.asking_price, 'current_price': item.current_price,
-                'owner': owner, 
-                '_links': {
-                    'self': request.url_root + f'item/{item.id}',
-                    'owner': request.url_root + f"user/{owner['id']}"
-                }
-            }, 200
-
-        return {'Error': 'Item is not find'}, 404
+            return make_response(render_template('item.html', user=user, item=item, User=User, today_date=today_date, form=form), 200)
 
 
     @login_required
-    def put(self, id):
-        item = Item.query.get(id)
-
-        if item:
-            if item.owner_id != current_user.id and current_user.admin == False:
-                return {'Error': 'Item is not yours'}, 401
-
-            form = request.get_json()
-            item_name = item.name
-
-            item.name = value_form(form, 'name', item.name)
-            item.description = value_form(form, 'description', item.description)
-            item.current_price = value_form(form, 'current_price', item.current_price)
-            item.end_date = datetime.strptime(
-                value_form(form, 'end_date', item.end_date.strftime(DATETIME)),
-                DATETIME
-            ).date()
-
-            if item.start_date > item.end_date:
-                return {'error': "Start date is later than end date."}, 400
-
-            database.session.add(item)
-            database.session.commit()
-
-            return {'modified': item_name}, 200
-
-        return {'Error': 'Item is not find'}, 404
-
-
-    @login_required
-    def patch(self, id):
-        item = Item.query.get(id)
-
-        if item:
-            form = request.get_json()
-            value = value_form(form, 'current_price', item.current_price)
-
-            if value <= item.current_price:
-                return {'Error': 'Your price is lower'}, 400
-            else:
-                item.current_price = value
-
-            database.session.add(item)
-            database.session.commit()
-
-            return {'price is updated': item.name}, 200
-
-        return {'Error': 'Item is not find'}, 404
-
-
-    @login_required
-    def delete(self, id):
-        item = Item.query.get(id)
-
-        if item:
-            if item.owner_id != current_user.id and current_user.admin == False:
-                return {'Error': 'Item is not yours'}, 401
-
-            database.session.delete(item)
-            database.session.commit()
-
-            return {'deleted': item.name}, 200
-
-        return {'Error': 'Item is not find'}, 404
-
-#==============================================================
-
-@api.route('/users')
-class UsersAll(Resource):
-
-    def get(self):
-        users = User.query.all()
-        users_list = list()
-
-        for user in users:
-            items = [{'name': i.name, 'id': i.id} for i in user.user_items]
-
-            users_list.append({
-                'id': user.id, 'nick': user.nick,
-                'first_name': user.first_name, 'last_name': user.last_name,
-                'active': user.active, 'admin': user.admin, 'register_date': user.register_date.strftime(DATETIME),
-                'user_items': items,'_links': {'self': request.url_root + f'user/{user.id}'}
-            })
-
-            for item in items:
-                users_list[-1]['_links'][item['name']] = request.url_root + f"item/{item['id']}"
-
-        return jsonify(users_list)
-
-
-    def post(self):
-        form = request.get_json()
-        user = User(
-            nick = value_form(form, 'nick'),
-            first_name = value_form(form, 'first_name'),
-            last_name = value_form(form, 'last_name'),
-            password = value_form(form, 'password'),
-            register_date = datetime.now(),
-            active = True,
-            admin = False,
-            user_items = []
-        )
-
-        if user.nick in [u.nick for u in User.query.all()]:
-            return {'error': f"{user.nick} is already in database"}, 400
-
-        database.session.add(user)
-        database.session.commit()
-
-        return {'added': f"{user.nick}"}, 201
-
-
-    @login_required
-    def delete(self):
-        if current_user.admin ==  False:
-            return {'error': "You have not permissions to deletes"}, 401
-            
-        users = User.query.all()
-
-        for user in users:
-            database.session.delete(user)
-
-        database.session.commit()
-        logout_user()
-
-        return {'deleted': 'all users', 'info': "You are logout now"}, 200
-
-
-@api.route('/user/<int:id>')
-class UserOne(Resource):
-
-    def get(self, id):
-        user = User.query.get(id)
-
-        if user:
-            items = [{'name': i.name, 'id': i.id} for i in user.user_items]
-            
-            user =  {
-                'id': user.id, 'nick': user.nick,
-                'first_name': user.first_name, 'last_name': user.last_name,
-                'active': user.active, 'admin': user.admin, 'register_date': user.register_date.strftime(DATETIME),
-                'user_items': items, '_links': {'self': request.url_root + f'user/{user.id}'}
-            }
-
-            for item in items:
-                user['_links'][item['name']] = request.url_root + f"item/{item['id']}"
-
-            return user, 200
-
-        return {'Error': 'User is not find'}, 404
-
-
-    @login_required
-    def put(self, id): 
-        user = User.query.get(id)
-
-        if user:
-            if user.id != current_user.id and current_user.admin == False:
-                return {'error': "You have not permissions to edit."}, 401
-
-            form = request.get_json()
-            user_name = user.nick
-            users_nicks = [u.nick for u in User.query.all()]
-
-            user.nick = value_form(form, 'nick', user.nick)
-            user.first_name = value_form(form, 'first_name', user.first_name)
-            user.last_name = value_form(form, 'last_name', user.last_name)
-            user.password = value_form(form, 'password', user.password)
-
-            if user.nick in users_nicks and user.nick != user_name:
-                return {'error': f"{user.nick} is already in database"}, 400
-
-            database.session.add(user)
-            database.session.commit()
-
-            return {'modifide': user_name}, 200
-
-        return {'Error': 'User is not find'}, 404
-
-
-    @login_required
-    def patch(self, id):
-        user = User.query.get(id)
-
-        if user:
-            if user.id != current_user.id and current_user.admin == False:
-                return {'error': "You have not permissions to edit."}, 401
-
-            form = request.get_json()
-            items_ids = value_form(form, 'user_items')
-            items = [i for i in Item.query.all() if i.id in items_ids]
-
-            for item in items_ids:
-                if not Item.query.get(item):
-                    return {'Error': 'Item not found'}, 400
-
-            user.user_items = items
-            
-            database.session.add(user)
-            database.session.commit()
-
-            return {'modifide': user.nick}, 200
-
-        return {'Error': 'User is not find'}, 404
-
-
-    @login_required
-    def delete(self, id):
-        user = User.query.get(id)
-
-        if user:
-            if user.id != current_user.id and current_user.admin == False:
-                return {'error': "You can't delete other users"}, 401
-
-            database.session.delete(user)
-            database.session.commit()
-            logout_user()
-
-            return {'deleted': user.nick, 'info': "You are logout now"}, 200
-
-        return {'error': 'User is not find'}, 404
+    def post(self, item_id):
+        form = NewPriceForm()
+        
+        if form.validate_on_submit():
+            item = Item.query.get(item_id)
+            user = current_user
+            today_date = datetime.today().date()
+
+            if item.current_price < form.new_price.data:
+                item.current_price = form.new_price.data
+                item.winner_id = user.id
+
+                database.session.add(item)
+                database.session.commit()
+        
+            return make_response(render_template('item.html', user=user, item=item, User=User, today_date=today_date, form=form), 200)
