@@ -31,3 +31,11 @@ class AddItemForm(FlaskForm):
     asking_price = FloatField("Cena wywoławcza", validators=[InputRequired()], default=0.0)
     start_date = DateField("Data rozpoczęcia", validators=[InputRequired()], default=date.today())
     end_date = DateField("Data zakończenia", validators=[InputRequired()], default=date.today())
+
+
+class EditItemForm(FlaskForm):
+    name = StringField("Nazwa", validators=[Length(max=256)])
+    description = TextAreaField("Opis", validators=[Length(max=2048)])
+    asking_price = FloatField("Cena wywoławcza", default=0.0)
+    start_date = DateField("Data rozpoczęcia", default=date.today())
+    end_date = DateField("Data zakończenia", default=date.today())

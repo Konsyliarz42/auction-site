@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+    <div class="container">
+        <div class="card shadow my-4">
+            <h5 class="card-header my-auto">Dodaj ofertę</h5>
+
+            <div class="card-body">
+                <form action="" method="POST">
+                    {{ form.hidden_tag() }}
+                    {{ wtf.form_field(form.name) }}
+                    {{ wtf.form_field(form.description) }}
+
+                    <div class="row">
+                        {% if item.start_date > today_date %}
+                            <div class="col">{{ wtf.form_field(form.start_date) }}</div>
+                        {% else %}
+                            <div class="col">
+                                <label>Data rozpoczęcia</label>
+                                <div class="container">
+                                    <p class="my-2">{{ item.start_date }}</p>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        {% if item.end_date >= today_date %}
+                            <div class="col">{{ wtf.form_field(form.end_date) }}</div>
+                        {% else %}
+                            <div class="col">
+                                <label>Data zakończenia</label>
+                                <div class="container">
+                                    <p class="my-2">{{ item.end_date }}</p>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="row">
+                        <div class="col">
+                            <label>Cena wywoławcza</label>
+                            <div class="container">
+                                <p class="my-2">{{ item.asking_price }} zł</p>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <label>Cena aktualna</label>
+                            <div class="container">
+                                <p class="my-2">{{ item.current_price }} zł</p>
+                            </div>
+                        </div>
+                    </div><br>
+                    
+                    <div class="row">
+                        <button type="submit" class="col btn btn-primary mx-4">Zatwierdź</button>
+                        <a class="col btn btn-secondary mx-4" href="/user/{{ user.id }}">Anuluj</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+{% endblock %}

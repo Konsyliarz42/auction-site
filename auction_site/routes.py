@@ -7,7 +7,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from .models import Item, User
 from .models import database
 from .functions import value_form
-from .forms import LoginForm, RegisterForm, NewPriceForm, EditUser, AddItemForm
+from .forms import LoginForm, RegisterForm, NewPriceForm, EditUser, AddItemForm, EditItemForm
 
 
 DATETIME = "%d.%m.%Y"
@@ -262,3 +262,47 @@ class ItemAdd(Resource):
             database.session.commit()
         
         return redirect(url_for('items_all'), 201)
+
+
+@api.route('/item/edit/<int:item_id>')
+class ItemAdd(Resource):
+
+    @login_required
+    def get(self, item_id):
+        user = current_user
+        item = Item.query.get(item_id)
+        today_date = date.today()
+
+        form = AddItemForm()
+        form.name.default = item.name
+        form.description.default = item.description
+        form.start_date.default = item.start_date
+        form.end_date.default = item.end_date
+        form.process()
+        
+        return make_response(render_template('edit_item.html', user=user, item=item, today_date=today_date, form=form), 200)
+
+    @login_required
+    def post(self, item_id):
+        user = current_user
+        item = Item.query.get(item_id)
+        form = EditItemForm()
+
+        if form.validate_on_submit():
+            item.name = form.name.data
+            item.description = form.description.data
+            item.asking_price = form.asking_price.data
+            item.current_price = form.asking_price.data
+            item.start_date = form.start_date.data
+            item.end_date = form.end_date.data
+
+            if item.start_date > item.end_date:
+                return make_response(render_template('edit_item.html', user=user, form=form), 400)
+
+            if item.start_date < date.today():
+                return make_response(render_template('edit_item.html', user=user, form=form), 400)
+
+            database.session.add(item)
+            database.session.commit()
+        
+        return redirect(url_for("user_one", user_id=user.id), 200)

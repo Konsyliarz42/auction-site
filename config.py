@@ -13,7 +13,7 @@ class Config():
 class AdminModelView(ModelView):
 
     def is_accessible(self):
-        return current_user.is_authenticated
+        return current_user.is_authenticated == current_user.admin
 
 
     def inaccessible_callback(self, name, **kwargs):
