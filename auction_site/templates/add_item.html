@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+    <div class="container">
+        <div class="card shadow my-4">
+            <h5 class="card-header my-auto">Dodaj ofertę</h5>
+
+            <div class="card-body">
+                <form action="" method="POST">
+                    {{ form.hidden_tag() }}
+                    {{ wtf.form_field(form.name) }}
+                    {{ wtf.form_field(form.description) }}
+
+                    <div class="row">
+                        <div class="col">{{ wtf.form_field(form.start_date) }}</div>
+                        <div class="col">{{ wtf.form_field(form.end_date) }}</div>
+                    </div>
+                    
+                    {{ wtf.form_field(form.asking_price) }}
+
+                    <div class="row">
+                        <button type="submit" class="col btn btn-primary mx-4">Dodaj ofertę</button>
+                        <a class="col btn btn-secondary mx-4" href="/items">Anuluj</a>
+                    </div>
+                    
+                </form>
+            </div>
+            
+            
+        </div>
+    </div>
+    
+{% endblock %}

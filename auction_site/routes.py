@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 from flask import jsonify, request, render_template, make_response, redirect, url_for
 from flask_restx import Api, Resource
 from flask_login import login_user, logout_user, current_user, login_required
@@ -7,7 +7,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from .models import Item, User
 from .models import database
 from .functions import value_form
-from .forms import LoginForm, RegisterForm, NewPriceForm, EditUser
+from .forms import LoginForm, RegisterForm, NewPriceForm, EditUser, AddItemForm
 
 
 DATETIME = "%d.%m.%Y"
@@ -63,7 +63,7 @@ class Register(Resource):
             database.session.add(user)
             database.session.commit()
 
-            return redirect('home', 200)
+            return redirect('home', 201)
 
 @api.route('/login')
 class Login(Resource):
@@ -222,6 +222,43 @@ class UserOne(Resource):
                 database.session.delete(user)
                 database.session.commit()
                 logout_user()
-                return redirect(api.url_for('home'), 200)
+                return redirect(url_for('home'), 200)
 
         return make_response(render_template('user.html', user=user, form=form), 200)
+
+@api.route('/add_item')
+class ItemAdd(Resource):
+
+    @login_required
+    def get(self):
+        user = current_user
+        form = AddItemForm()
+        
+        return make_response(render_template('add_item.html', user=user, form=form), 200)
+
+    @login_required
+    def post(self):
+        user = current_user
+        form = AddItemForm()
+
+        if form.validate_on_submit():
+            item = Item(
+                name = form.name.data,
+                description = form.description.data,
+                asking_price = form.asking_price.data,
+                current_price = form.asking_price.data,
+                start_date = form.start_date.data,
+                end_date = form.end_date.data,
+                owner_id = user.id
+            )
+
+            if item.start_date > item.end_date:
+                return make_response(render_template('add_item.html', user=user, form=form), 400)
+
+            if item.start_date < date.today():
+                return make_response(render_template('add_item.html', user=user, form=form), 400)
+
+            database.session.add(item)
+            database.session.commit()
+        
+        return redirect(url_for('items_all'), 201)

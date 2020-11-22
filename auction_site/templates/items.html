@@ -3,39 +3,46 @@
 {% block content %}
 
 {% if not items %}
-<div class="container my-4">
-    <blockquote class="blockquote text-center">
-        <h1 class="mb-0 display-4">Niestety brakuje nam ofert :(</h1>
-        <span class="text-secondary">Szybko załóż konto lub zaloguj się i dodaj nową ofertę.</span>
-    </blockquote>
-</div>
+    <div class="container my-4">
+        <blockquote class="blockquote text-center">
+            <h1 class="mb-0 display-4">Niestety brakuje nam ofert :(</h1>
+            <span class="text-secondary">Szybko załóż konto lub zaloguj się i dodaj nową ofertę.</span>
+        </blockquote>
+    </div>
+{% endif %}
+
+{% if user %}
+    <div class="container">
+        <a class="btn btn-block btn-outline-primary" href="/add_item">Dodaj ofertę</a>
+        
+    </div>
 {% endif %}
 
 {% for item in items %}
-{% if item.end_date >= today_date %}
-<div class="container border my-4">
-    <div class="row">
-        <div class="col-3">
-            <h1 class="">{{ item.name[:40] + (item.name[40:] and '...') }}</h1>
-            <small>Właściciel: {{ User.query.get(item.owner_id).nick }}</small>
-        </div>
-        
-        <div class="col mt-5">
-            <p class="lead my-0">Data rozpoczęcia: <strong>{{item.start_date}}</strong></p>
-        </div>
+    {% if item.end_date >= today_date %}
+        <div class="container border my-4">
+            <div class="row">
+                <div class="col-3">
+                    <h1 class="">{{ item.name[:40] + (item.name[40:] and '...') }}</h1>
+                    <small>Właściciel: {{ User.query.get(item.owner_id).nick }}</small>
+                </div>
+                
+                <div class="col mt-5">
+                    <p class="lead my-0">Data rozpoczęcia: <strong>{{item.start_date}}</strong></p>
+                </div>
 
-        <div class="col mt-5">
-            <p class="lead my-0">Data zakończenia: <strong>{{item.end_date}}</strong></p>
-        </div>
+                <div class="col mt-5">
+                    <p class="lead my-0">Data zakończenia: <strong>{{item.end_date}}</strong></p>
+                </div>
 
-        <div class="col-4 card-header text-center">
-            <h5>Aktualna cena: {{ item.current_price }} zł</h5>
-            <small class="text-muted">Cena wywoławcza: {{ item.asking_price }} zł</small>
-            <a href="/item/{{ item.id }}" class="btn btn-block btn-primary">Przejdź do oferty</a>
+                <div class="col-4 card-header text-center">
+                    <h5>Aktualna cena: {{ item.current_price }} zł</h5>
+                    <small class="text-muted">Cena wywoławcza: {{ item.asking_price }} zł</small>
+                    <a href="/item/{{ item.id }}" class="btn btn-block btn-primary">Przejdź do oferty</a>
+                </div>
+            </div>
         </div>
-    </div>
-</div>
-{% endif %}
+    {% endif %}
 {% endfor %}
 
 {% endblock %}
