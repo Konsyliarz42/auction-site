@@ -13,7 +13,7 @@
 
 {% if user %}
     <div class="container">
-        <a class="btn btn-block btn-outline-primary" href="/add_item">Dodaj ofertę</a>
+        <a class="btn btn-block btn-outline-primary" href="/items/add">Dodaj ofertę</a>
         
     </div>
 {% endif %}
@@ -28,11 +28,11 @@
                 </div>
                 
                 <div class="col mt-5">
-                    <p class="lead my-0">Data rozpoczęcia: <strong>{{item.start_date}}</strong></p>
+                    <p class="lead my-0">Data rozpoczęcia: <strong>{{ item.start_date }}</strong></p>
                 </div>
 
                 <div class="col mt-5">
-                    <p class="lead my-0">Data zakończenia: <strong>{{item.end_date}}</strong></p>
+                    <p class="lead my-0">Data zakończenia: <strong>{{ item.end_date }}</strong></p>
                 </div>
 
                 <div class="col-4 card-header text-center">

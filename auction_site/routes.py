@@ -1,4 +1,4 @@
-from datetime import datetime, date
+from datetime import date
 from flask import jsonify, request, render_template, make_response, redirect, url_for
 from flask_restx import Api, Resource
 from flask_login import login_user, logout_user, current_user, login_required
@@ -6,17 +6,14 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 from .models import Item, User
 from .models import database
-from .functions import value_form
-from .forms import LoginForm, RegisterForm, NewPriceForm, EditUser, AddItemForm, EditItemForm
-
-
-DATETIME = "%d.%m.%Y"
+from .forms import LoginForm, RegisterForm, NewPriceForm, EditUserForm, AddItemForm, EditItemForm
 
 api = Api()
 
 @api.route('/home')
 class Home(Resource):
 
+    @api.response(200, 'Success - Homepage is loaded')
     def get(self):
         user = None
 
@@ -25,7 +22,8 @@ class Home(Resource):
 
         return make_response(render_template('base.html', user=user), 200)
 
-    
+
+    @api.response(200, 'Success - Correct logout')
     def post(self):
         current_user.active = False
         database.session.add(current_user)
@@ -37,11 +35,15 @@ class Home(Resource):
 @api.route('/register')
 class Register(Resource):
 
+    @api.response(200, 'Success - Correct load form')
     def get(self):
         form = RegisterForm()
         return make_response(render_template('register.html', form=form), 200)
 
 
+    @api.response(201, 'Created - User is add to database')
+    @api.response(400, 'Bad request - Incorrect form value')
+    @api.expect(api.model('User', User.FIELDS))
     def post(self):
         form = RegisterForm()
         
@@ -51,7 +53,7 @@ class Register(Resource):
                 first_name = form.first_name.data,
                 last_name = form.last_name.data,
                 password = generate_password_hash(form.password.data, 'sha256'),
-                register_date = datetime.now(),
+                register_date = date.today(),
                 active = True,
                 admin = False,
                 user_items = []
@@ -68,11 +70,14 @@ class Register(Resource):
 @api.route('/login')
 class Login(Resource):
 
+    @api.response(200, 'Success - Correct load form')
     def get(self):
         form = LoginForm()
         return make_response(render_template('login.html', form=form), 200)
 
 
+    @api.response(400, 'Bad request - Incorrect form value')
+    @api.response(200, 'Success - Correct login')
     def post(self):
 
         form = LoginForm()
@@ -93,10 +98,11 @@ class Login(Resource):
 @api.route('/items')
 class ItemsAll(Resource):
 
+    @api.response(200, 'Success - List of items is loaded')
     def get(self):
         items = Item.query.all()
         user = None
-        today_date = datetime.today().date()
+        today_date = date.today()
 
         if current_user.is_authenticated:
             user = current_user
@@ -104,43 +110,14 @@ class ItemsAll(Resource):
         return make_response(render_template('items.html', user=user, items=items, User=User, today_date=today_date), 200)
 
 
-    @login_required
-    def post(self):
-        form = request.get_json()
-        item = Item(
-            name = value_form(form, 'name'),
-            description = value_form(form, 'description'),
-            asking_price = value_form(form, 'asking_price'),
-            current_price = value_form(form, 'asking_price'),
-            start_date = datetime.strptime(
-                value_form(form, 'start_date'), 
-                DATETIME
-            ),
-            end_date = datetime.strptime(
-                value_form(form, 'end_date'), 
-                DATETIME
-            ),
-            owner_id = 1
-        )
-
-        if item.start_date > item.end_date:
-            return {'error': "Start date is later than end date."}, 400
-
-        if item.start_date.date() < datetime.today().date():
-            return {'error': "Start date can't be earlier than today date."}, 400
-
-        database.session.add(item)
-        database.session.commit()
-
-        return {'added': item.name}, 201
-
 @api.route('/item/<int:item_id>')
 class ItemOne(Resource):
 
+    @api.response(200, 'Success - Item is loaded')
     def get(self, item_id):
         item = Item.query.get(item_id)
         user = None
-        today_date = datetime.today().date()
+        today_date = date.today()
         form = NewPriceForm()
 
         if current_user.is_authenticated:
@@ -150,6 +127,8 @@ class ItemOne(Resource):
             return make_response(render_template('item.html', user=user, item=item, User=User, today_date=today_date, form=form), 200)
 
 
+    @api.response(401, 'Unauthorized — Login required')
+    @api.response(200, 'Success - Correct change price')
     @login_required
     def post(self, item_id):
         form = NewPriceForm()
@@ -157,7 +136,7 @@ class ItemOne(Resource):
         if form.validate_on_submit():
             item = Item.query.get(item_id)
             user = current_user
-            today_date = datetime.today().date()
+            today_date = date.today()
 
             if item.current_price < form.new_price.data:
                 item.current_price = form.new_price.data
@@ -172,6 +151,7 @@ class ItemOne(Resource):
 @api.route('/users')
 class UsersAll(Resource):
 
+    @api.response(200, 'Success - List of users is loaded')
     def get(self):
         users = User.query.all()
         user = None
@@ -185,10 +165,12 @@ class UsersAll(Resource):
 @api.route('/user/<int:user_id>')
 class UserOne(Resource):
 
+    @api.response(401, 'Unauthorized — Login required')
+    @api.response(200, 'Success - User is loaded')
     @login_required
     def get(self, user_id):
         user = current_user
-        form = EditUser()
+        form = EditUserForm()
         form.nick.default = user.nick
         form.first_name.default = user.first_name
         form.last_name.default = user.last_name
@@ -197,10 +179,13 @@ class UserOne(Resource):
         return make_response(render_template('user.html', user=user, form=form), 200)
 
 
+    @api.response(401, 'Unauthorized — Login required')
+    @api.response(200, 'Success - Correct form')
+    @api.expect(api.model('User', User.FIELDS))
     @login_required
     def post(self, user_id):
         user = current_user
-        form = EditUser(user=user)
+        form = EditUserForm()
 
         if form.validate_on_submit():
             user.nick = form.nick.data
@@ -210,6 +195,7 @@ class UserOne(Resource):
             if request.form.get('new_password') and check_password_hash(user.password, request.form.get('old_password')):
                 user.password = generate_password_hash(request.form.get('new_password'), 'sha256')
 
+ 
             for item in user.user_items:
                 if request.form.get('delitem' + str(item.id)):
                     user.user_items.remove(item)
@@ -219,6 +205,9 @@ class UserOne(Resource):
             database.session.commit()
 
             if request.form.get('deluser'):
+                for item in user.user_items:
+                    database.session.delete(item)
+                    
                 database.session.delete(user)
                 database.session.commit()
                 logout_user()
@@ -226,9 +215,11 @@ class UserOne(Resource):
 
         return make_response(render_template('user.html', user=user, form=form), 200)
 
-@api.route('/add_item')
+@api.route('/items/add')
 class ItemAdd(Resource):
 
+    @api.response(401, 'Unauthorized — Login required')
+    @api.response(200, 'Success - Form is loaded')
     @login_required
     def get(self):
         user = current_user
@@ -236,6 +227,11 @@ class ItemAdd(Resource):
         
         return make_response(render_template('add_item.html', user=user, form=form), 200)
 
+
+    @api.response(401, 'Unauthorized — Login required')
+    @api.response(201, 'Created - Item is add to database')
+    @api.response(400, 'Bad request - Incorrect form value')
+    @api.expect(api.model('Item', Item.FIELDS))
     @login_required
     def post(self):
         user = current_user
@@ -265,8 +261,10 @@ class ItemAdd(Resource):
 
 
 @api.route('/item/edit/<int:item_id>')
-class ItemAdd(Resource):
+class ItemEdit(Resource):
 
+    @api.response(401, 'Unauthorized — Login required')
+    @api.response(200, 'Success - Form is loaded')
     @login_required
     def get(self, item_id):
         user = current_user
@@ -282,8 +280,14 @@ class ItemAdd(Resource):
         
         return make_response(render_template('edit_item.html', user=user, item=item, today_date=today_date, form=form), 200)
 
+
+    @api.response(401, 'Unauthorized — Login required')
+    @api.response(400, 'Bad request - Incorrect form value')
+    @api.response(200, 'Success - Correct form')
+    @api.expect(api.model('Item', Item.FIELDS))
     @login_required
     def post(self, item_id):
+    
         user = current_user
         item = Item.query.get(item_id)
         form = EditItemForm()

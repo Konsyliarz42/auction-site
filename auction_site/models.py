@@ -6,6 +6,14 @@ database = SQLAlchemy()
 
 #================================================================
 class Item(database.Model):
+    FIELDS = {
+        'name': fields.String(required=True),
+        'description': fields.String(),
+        'start_date': fields.Date(required=True),
+        'end_date': fields.Date(required=True),
+        'asking_price': fields.Float(default=0.00),
+    }
+
     id = database.Column(database.Integer, primary_key=True)
     name = database.Column(database.String(256), nullable=False)
     description = database.Column(database.String(2048))
@@ -23,6 +31,13 @@ class Item(database.Model):
 
 #================================================================
 class User(database.Model, UserMixin):
+    FIELDS = {
+        'nick': fields.String(required=True),
+        'password': fields.String(required=True),
+        'first_name': fields.String(),
+        'last_name': fields.String(),
+    }
+
     id = database.Column(database.Integer, primary_key=True)
     nick = database.Column(database.String(256), nullable=False)
     first_name = database.Column(database.String(256))

@@ -4,7 +4,7 @@
 
     <div class="container">
         <div class="card shadow my-4">
-            <h5 class="card-header my-auto">Dodaj ofertę</h5>
+            <h5 class="card-header my-auto">Edytuj ofertę</h5>
 
             <div class="card-body">
                 <form action="" method="POST">
@@ -37,12 +37,17 @@
                     </div>
 
                     <div class="row">
-                        <div class="col">
-                            <label>Cena wywoławcza</label>
-                            <div class="container">
-                                <p class="my-2">{{ item.asking_price }} zł</p>
+                        {% if item.start_date > today_date %}
+                            <div class="col">{{ wtf.form_field(form.asking_price) }}</div>
+                        {% else %}
+                            <div class="col">
+                                <label>Cena wywoławcza</label>
+                                <div class="container">
+                                    <p class="my-2">{{ item.asking_price }} zł</p>
+                                </div>
                             </div>
-                        </div>
+                        {% endif %}
+                        
                         <div class="col">
                             <label>Cena aktualna</label>
                             <div class="container">
