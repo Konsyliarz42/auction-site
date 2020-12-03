@@ -11,8 +11,9 @@ from . import routes
 
 from config import Config, AdminModelView
 
-app = Flask(__name__)
+app = Flask(__name__, instance_relative_config=True)
 app.config.from_object(Config)
+app.config.from_pyfile(os.path.join(app.instance_path, 'config.py'), silent=True)
 
 routes.api.init_app(app)
 
@@ -32,6 +33,7 @@ Bootstrap(app)
 @login_manager.user_loader
 def load_user(user_id):
     return models.User.query.get(user_id)
+
 
 @app.shell_context_processor
 def make_shell_context():

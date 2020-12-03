@@ -10,6 +10,7 @@ from .forms import LoginForm, RegisterForm, NewPriceForm, EditUserForm, AddItemF
 
 api = Api()
 
+#================================================================
 @api.route('/home')
 class Home(Resource):
 
@@ -23,13 +24,13 @@ class Home(Resource):
         return make_response(render_template('base.html', user=user), 200)
 
 
-    @api.response(200, 'Success - Correct logout')
+    @api.response(303, 'See Other - Correct logout')
     def post(self):
         current_user.active = False
         database.session.add(current_user)
         database.session.commit()
         logout_user()
-        return redirect('home', 200)
+        return redirect('home', 303)
    
 
 @api.route('/register')
@@ -41,7 +42,7 @@ class Register(Resource):
         return make_response(render_template('register.html', form=form), 200)
 
 
-    @api.response(201, 'Created - User is add to database')
+    @api.response(303, 'See Other - User is add to database')
     @api.response(400, 'Bad request - Incorrect form value')
     @api.expect(api.model('User', User.FIELDS))
     def post(self):
@@ -65,7 +66,8 @@ class Register(Resource):
             database.session.add(user)
             database.session.commit()
 
-            return redirect('home', 201)
+            return redirect('home', 303)
+
 
 @api.route('/login')
 class Login(Resource):
@@ -77,7 +79,7 @@ class Login(Resource):
 
 
     @api.response(400, 'Bad request - Incorrect form value')
-    @api.response(200, 'Success - Correct login')
+    @api.response(303, 'See Other - Correct login')
     def post(self):
 
         form = LoginForm()
@@ -90,11 +92,81 @@ class Login(Resource):
                 user.active = True
                 database.session.add(user)
                 database.session.commit()
-                return redirect('home', 200)
+                return redirect('home', 303)
 
         return make_response(render_template('login.html', form=form), 400)
 
 
+#================================================================
+@api.route('/users')
+class UsersAll(Resource):
+
+    @api.response(200, 'Success - List of users is loaded')
+    def get(self):
+        users = User.query.all()
+        user = None
+
+        if current_user.is_authenticated:
+            user = current_user
+
+        return make_response(render_template('users.html', user=user, users=users, User=User), 200)
+
+
+@api.route('/user/<int:user_id>')
+class UserOne(Resource):
+
+    @api.response(401, 'Unauthorized — Login required')
+    @api.response(200, 'Success - User is loaded')
+    @login_required
+    def get(self, user_id):
+        user = current_user
+        form = EditUserForm()
+        form.nick.default = user.nick
+        form.first_name.default = user.first_name
+        form.last_name.default = user.last_name
+        form.process()
+
+        return make_response(render_template('user.html', user=user, form=form), 200)
+
+
+    @api.response(401, 'Unauthorized — Login required')
+    @api.response(303, 'See Other - Correct form')
+    @api.expect(api.model('User', User.FIELDS))
+    @login_required
+    def post(self, user_id):
+        user = current_user
+        form = EditUserForm()
+
+        if form.validate_on_submit():
+            user.nick = form.nick.data
+            user.first_name = form.first_name.data
+            user.last_name = form.last_name.data
+
+            if request.form.get('new_password') and check_password_hash(user.password, request.form.get('old_password')):
+                user.password = generate_password_hash(request.form.get('new_password'), 'sha256')
+
+ 
+            for item in user.user_items:
+                if request.form.get('delitem' + str(item.id)):
+                    user.user_items.remove(item)
+                    database.session.delete(item)
+                
+            database.session.add(user)
+            database.session.commit()
+
+            if request.form.get('deluser'):
+                for item in user.user_items:
+                    database.session.delete(item)
+                    
+                database.session.delete(user)
+                database.session.commit()
+                logout_user()
+                return redirect(url_for('home'), 303)
+
+        return make_response(render_template('user.html', user=user, form=form), 200)
+
+
+#================================================================
 @api.route('/items')
 class ItemsAll(Resource):
 
@@ -148,73 +220,6 @@ class ItemOne(Resource):
             return make_response(render_template('item.html', user=user, item=item, User=User, today_date=today_date, form=form), 200)
 
 
-@api.route('/users')
-class UsersAll(Resource):
-
-    @api.response(200, 'Success - List of users is loaded')
-    def get(self):
-        users = User.query.all()
-        user = None
-
-        if current_user.is_authenticated:
-            user = current_user
-
-        return make_response(render_template('users.html', user=user, users=users, User=User), 200)
-
-
-@api.route('/user/<int:user_id>')
-class UserOne(Resource):
-
-    @api.response(401, 'Unauthorized — Login required')
-    @api.response(200, 'Success - User is loaded')
-    @login_required
-    def get(self, user_id):
-        user = current_user
-        form = EditUserForm()
-        form.nick.default = user.nick
-        form.first_name.default = user.first_name
-        form.last_name.default = user.last_name
-        form.process()
-
-        return make_response(render_template('user.html', user=user, form=form), 200)
-
-
-    @api.response(401, 'Unauthorized — Login required')
-    @api.response(200, 'Success - Correct form')
-    @api.expect(api.model('User', User.FIELDS))
-    @login_required
-    def post(self, user_id):
-        user = current_user
-        form = EditUserForm()
-
-        if form.validate_on_submit():
-            user.nick = form.nick.data
-            user.first_name = form.first_name.data
-            user.last_name = form.last_name.data
-
-            if request.form.get('new_password') and check_password_hash(user.password, request.form.get('old_password')):
-                user.password = generate_password_hash(request.form.get('new_password'), 'sha256')
-
- 
-            for item in user.user_items:
-                if request.form.get('delitem' + str(item.id)):
-                    user.user_items.remove(item)
-                    database.session.delete(item)
-                
-            database.session.add(user)
-            database.session.commit()
-
-            if request.form.get('deluser'):
-                for item in user.user_items:
-                    database.session.delete(item)
-                    
-                database.session.delete(user)
-                database.session.commit()
-                logout_user()
-                return redirect(url_for('home'), 200)
-
-        return make_response(render_template('user.html', user=user, form=form), 200)
-
 @api.route('/items/add')
 class ItemAdd(Resource):
 
@@ -229,7 +234,7 @@ class ItemAdd(Resource):
 
 
     @api.response(401, 'Unauthorized — Login required')
-    @api.response(201, 'Created - Item is add to database')
+    @api.response(303, 'See Other - Item is add to database')
     @api.response(400, 'Bad request - Incorrect form value')
     @api.expect(api.model('Item', Item.FIELDS))
     @login_required
@@ -257,7 +262,7 @@ class ItemAdd(Resource):
             database.session.add(item)
             database.session.commit()
         
-        return redirect(url_for('items_all'), 201)
+        return redirect(url_for('items_all'), 303)
 
 
 @api.route('/item/edit/<int:item_id>')
@@ -283,7 +288,7 @@ class ItemEdit(Resource):
 
     @api.response(401, 'Unauthorized — Login required')
     @api.response(400, 'Bad request - Incorrect form value')
-    @api.response(200, 'Success - Correct form')
+    @api.response(303, 'See Other - Correct form')
     @api.expect(api.model('Item', Item.FIELDS))
     @login_required
     def post(self, item_id):
@@ -309,4 +314,4 @@ class ItemEdit(Resource):
             database.session.add(item)
             database.session.commit()
         
-        return redirect(url_for("user_one", user_id=user.id), 200)
+        return redirect(url_for("user_one", user_id=user.id), 303)
