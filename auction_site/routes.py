@@ -17,6 +17,8 @@ class Home(Resource):
     @api.response(200, 'Success - Homepage is loaded')
     def get(self):
         user = None
+        items = list()
+        items_data = Item.query.filter_by(end_date=date.today()).all()
         info = {
             'title': "Witaj na stronie głównej",
             'description': """Obecnie znajdujesz się na stronie głównej.
@@ -32,7 +34,23 @@ class Home(Resource):
                 'admin': current_user.admin
             }
 
-        return make_response(render_template('base.html', user=user, info=info), 200)
+        if items_data:
+            for item in items_data:
+                items.append({
+                        'id': item.id,
+                        'name': item.name,
+                        'description': item.description,
+                        'start_date': item.start_date,
+                        'end_date': item.end_date,
+                        'asking_price': item.asking_price,
+                        'current_price': item.current_price,
+                        'owner': User.query.get(item.owner_id).nick
+                })
+
+            if len(items) > 2:
+                items = items[:3]
+
+        return make_response(render_template('home.html', user=user, items=items, info=info), 200)
 
 
     @api.response(303, 'See Other - Correct logout')
@@ -301,7 +319,7 @@ class ItemOne(Resource):
 
             if item.current_price < form.new_price.data:
                 item.current_price = form.new_price.data
-                item.winner_id = user.id
+                item.winner_id = user['id']
 
                 database.session.add(item)
                 database.session.commit()

@@ -2,6 +2,51 @@
 
 {% block content %}
 
+<div class="container-fluid text-center">
+    {% if items %}
+        <!--Last items-->
+        <h4 class="display-4">Ostatnia szansa</h4>
+        <p class="lead">Oto 3 ostatnie oferty które dziś zostaną zakończone.</p>
+        
+        <!--Items cards-->
+        <div class="row no-gutters justify-content-md-center">
+            {% for item in items %}
 
+                {% if items.index(item) == 1 %}
+                    <div class="col card shadow mx-4 mb-4 mt-0" style="max-width: 512px;">
+                {% else %}
+                    <div class="col card shadow mx-4 my-auto" style="max-width: 384px;">
+                {% endif %}
+
+                    <!--Card header-->
+                    <a href="/item/{{ item.id }}" class="card-header text-decoration-none" >
+                        <h3 class="text-dark text-center my-0">{{ item.name[:40] + (item.name[40:] and '...') }}</h3>
+                    </a>
+
+                    <!--Card image-->
+                    <img src="{{ url_for('static', filename='_noimage.jpg') }}" alt="no image">
+
+                    <!--Card body-->
+                    <div class="card-body">
+                        <p class="lead my-0">Data rozpoczęcia: <strong>{{ item.start_date }}</strong></p><br>
+                        <p class="lead my-0">Data zakończenia: <strong>{{ item.end_date }}</strong></p><br>
+
+                        <div class="border text-center">
+                            <p class="lead my-0"><strong>Aktualna cena: {{ item.current_price }} zł</strong></p>
+                            <small class="text-muted">Cena wywoławcza: {{ item.asking_price }} zł</small>
+                        </div>
+                    </div>
+
+                    <!--Card footer-->
+                    <div class="card-footer text-muted">Właściciel: {{ item.owner }}</div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <h4 class="display-4">Zapraszamy do wstawiania ofert</h4>
+        <p class="lead">Zaloguj się i przejdź do zakładki 'oferty'.</p>
+    {% endif %}
+
+</div>
 
 {% endblock %}
