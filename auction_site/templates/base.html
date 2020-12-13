@@ -14,38 +14,73 @@
 
     <body>
 
-        <div class="jumbotron mb-0">
+        <!--Title of service-->
+        <div class="jumbotron shadow border mt-4">
             <div class="container">
                 <h1 class="display-2">Testowy serwis aukcyjny</h1>
-                <p class="lead">Witam na testowym projekcie serwisu aukcyjnego.</p>
+                <p class="lead ">Witam na testowym projekcie serwisu aukcyjnego.</p>
             </div>
         </div>
 
-        <nav class="navbar navbar-dark bg-dark mb-4">
-            <span class="navbar-brand mb-0">Menu</span>
+        <!--Navbar-->
+        <div class="fixed-top shadow">
+            <div class="collapse" id="ExternalContent">
+                <div class="bg-info p-4 row text-white">
 
-            <ul class="col my-auto">
-                <a class="nav-item text-white btn" href="/home">Strona główna</a>
-                <a class="nav-item text-white btn" href="/items">Oferty</a>
-                <a class="nav-item text-white btn" href="/users">Użytkownicy</a>
-            </ul>
+                    <!--Info-->
+                    <div class="col-6">
+                        <h3>{{ info.title }}</h3>
+                        <p class="text-justify">{{ info.description }}</p>
+                    </div>
 
-            {% if not user %}
-                <ul class="my-auto">
-                    <a class="nav-item btn btn-outline-info" href="/login">Zaloguj się</a>
-                    <a class="nav-item btn btn-outline-info" href="/register">Zarejestruj się</a>
+                    <div class="col"></div>
+
+                    <!--Special buttons-->
+                    <ul class="col-1 my-auto">
+                        {% if user %}
+                            <a class="text-decoration-none" href="/user/{{ user.id }}">
+                                <button type="button" class="btn btn-sm btn-block btn-light shadow">Mój profil</button>
+                            </a><br>
+
+                            <a class="text-decoration-none" href="/items">
+                                <button type="button" class="btn btn-sm btn-block btn-light shadow">Moje oferty</button>
+                            </a>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+
+            <nav class="navbar navbar-dark bg-dark">
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#ExternalContent">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!--Main buttons-->
+                <ul class="col my-auto">
+                    <a class="nav-item text-white btn" href="/home">Strona główna</a>
+                    <a class="nav-item text-white btn" href="/items">Oferty</a>
+                    <a class="nav-item text-white btn" href="/users">Użytkownicy</a>
                 </ul>
-            {% else %}
-                <p class="lead text-white my-auto mr-2">{{ user.nick }}</p>
-                <form action="/home" method="POST">
-                    <button type="submit" class="btn btn-outline-info">Wyloguj</button>
-                </form>   
-                {% if user and user.admin == true %}
-                    <a class="btn btn-outline-info ml-2" href="/admin">Pandel administratora</a>
-                {% endif %}        
-            {% endif %}
-        </nav>      
 
+                <!--User's buttons-->
+                {% if not user %}
+                    <ul class="my-auto">
+                        <a class="nav-item btn btn-outline-info" href="/login">Zaloguj się</a>
+                        <a class="nav-item btn btn-outline-info" href="/register">Zarejestruj się</a>
+                    </ul>
+                {% else %}
+                    <p class="lead text-white my-auto mr-2">{{ user.nick }}</p>
+                    <form action="/home" method="POST">
+                        <button type="submit" class="btn btn-outline-info">Wyloguj</button>
+                    </form>   
+                    {% if user and user.admin == true %}
+                        <a class="btn btn-outline-info ml-2" href="/admin">Pandel administratora</a>
+                    {% endif %}        
+                {% endif %}
+            </nav>
+        </div>
+
+        <!--Page's content-->
         {% block content %}{% endblock %}
 
     </body>

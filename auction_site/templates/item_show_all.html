@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+{% if not items %}
+    <div class="container my-4">
+        <blockquote class="blockquote text-center">
+            <h1 class="mb-0 display-4">Niestety brakuje nam ofert :(</h1>
+            <span class="text-secondary">Szybko załóż konto lub zaloguj się i dodaj nową ofertę.</span>
+        </blockquote>
+    </div>
+{% endif %}
+
+{% if user %}
+    <div class="container">
+        <a class="btn btn-block btn-outline-primary" href="/items/add">Dodaj ofertę</a>
+    </div>
+{% endif %}
+
+<div class="container-fluid row no-gutters">
+    {% for item in items %}
+        <div class="col-4 card shadow m-4 " style="max-width: 576px;" style="font-size:30px;">
+
+            <!--Card header-->
+            <a href="/item/{{ item.id }}" class="card-header text-decoration-none" >
+                <h3 class="text-dark text-center my-0">{{ item.name[:40] + (item.name[40:] and '...') }}</h3>
+            </a>
+
+            <!--Card body-->
+            <div class="row card-body">
+                <div class="col">
+                    <img src="{{ url_for('static', filename='_noimage.jpg') }}" class="card-img border shadow" alt="no image">
+                </div>
+
+                <div class="col">
+                    <p class="lead my-0">Data rozpoczęcia: <strong>{{ item.start_date }}</strong></p><br>
+                    <p class="lead my-0">Data zakończenia: <strong>{{ item.end_date }}</strong></p><br>
+
+                    <div class="border text-center">
+                        <p class="lead my-0"><strong>Aktualna cena: {{ item.current_price }} zł</strong></p>
+                        <small class="text-muted">Cena wywoławcza: {{ item.asking_price }} zł</small>
+                    </div>
+                </div>
+            </div>
+            
+            <!--Card footer-->
+            <div class="card-footer text-muted">Właściciel: {{ item.owner }}</div>
+        </div>
+    {% endfor %}
+</div>
+
+{% endblock %}

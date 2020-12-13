@@ -17,11 +17,22 @@ class Home(Resource):
     @api.response(200, 'Success - Homepage is loaded')
     def get(self):
         user = None
+        info = {
+            'title': "Witaj na stronie głównej",
+            'description': """Obecnie znajdujesz się na stronie głównej.
+            Z tego miejsca możesz spokojnie przeglądać cały serwis.
+            Przeglądać oferty, licytować bądź dodawać nowe oferty.
+            W tym miejscu znajdziesz informację o stronach lub opcje do podstron serwisu."""
+        }
 
         if current_user.is_authenticated:
-            user = current_user
+            user = {
+                'id': current_user.id,
+                'nick': current_user.nick,
+                'admin': current_user.admin
+            }
 
-        return make_response(render_template('base.html', user=user), 200)
+        return make_response(render_template('base.html', user=user, info=info), 200)
 
 
     @api.response(303, 'See Other - Correct logout')
@@ -39,7 +50,12 @@ class Register(Resource):
     @api.response(200, 'Success - Correct load form')
     def get(self):
         form = RegisterForm()
-        return make_response(render_template('register.html', form=form), 200)
+        user = None
+        info = {
+            'title': "Rejestracja",
+            'description': """Do zarejestrowania w serwisie wystarczą tylko podstawowe informacje."""
+        }
+        return make_response(render_template('register.html', user=user, info=info, form=form), 200)
 
 
     @api.response(303, 'See Other - User is add to database')
@@ -75,7 +91,14 @@ class Login(Resource):
     @api.response(200, 'Success - Correct load form')
     def get(self):
         form = LoginForm()
-        return make_response(render_template('login.html', form=form), 200)
+        user = None
+        info = {
+            'title': "Logowanie",
+            'description': """Zalogować się możesz wyłącznie jeśli posiadasz już konto.
+            Jeżeli jeszcze go nie masz wystarczy że klikniesz 'Zarejestruj się' i wypełnisz krótki formularz.
+            Będąc zalogowanym w tym panelu znajdziesz również przyciski do zaządzania profilem."""
+        }
+        return make_response(render_template('login.html', user=user, info=info, form=form), 200)
 
 
     @api.response(400, 'Bad request - Incorrect form value')
@@ -105,11 +128,15 @@ class UsersAll(Resource):
     def get(self):
         users = User.query.all()
         user = None
+        info = {
+            'title': "Lista użytkowników",
+            'description': """Znajdziesz tutaj karty wszystkich użytkowników zarejestrowanych w serwisie."""
+        }
 
         if current_user.is_authenticated:
             user = current_user
 
-        return make_response(render_template('users.html', user=user, users=users, User=User), 200)
+        return make_response(render_template('users.html', user=user, info=info, users=users, User=User), 200)
 
 
 @api.route('/user/<int:user_id>')
@@ -120,13 +147,18 @@ class UserOne(Resource):
     @login_required
     def get(self, user_id):
         user = current_user
+        info = {
+            'title': "Strona twojego profilu",
+            'description': """Znajdziesz tutaj wszytkie informacje o swoim profilu."""
+        }
+
         form = EditUserForm()
         form.nick.default = user.nick
         form.first_name.default = user.first_name
         form.last_name.default = user.last_name
         form.process()
 
-        return make_response(render_template('user.html', user=user, form=form), 200)
+        return make_response(render_template('user.html', user=user, info=info, form=form), 200)
 
 
     @api.response(401, 'Unauthorized — Login required')
@@ -136,6 +168,10 @@ class UserOne(Resource):
     def post(self, user_id):
         user = current_user
         form = EditUserForm()
+        info = {
+            'title': "Strona twojego profilu",
+            'description': """Znajdziesz tutaj wszytkie informacje o swoim profilu."""
+        }
 
         if form.validate_on_submit():
             user.nick = form.nick.data
@@ -163,7 +199,7 @@ class UserOne(Resource):
                 logout_user()
                 return redirect(url_for('home'), 303)
 
-        return make_response(render_template('user.html', user=user, form=form), 200)
+        return make_response(render_template('user.html', user=user, info=info, form=form), 200)
 
 
 #================================================================
@@ -172,14 +208,38 @@ class ItemsAll(Resource):
 
     @api.response(200, 'Success - List of items is loaded')
     def get(self):
-        items = Item.query.all()
-        user = None
+        items_data = Item.query.all()
+        items = list()
         today_date = date.today()
+        user = None
+        info = {
+            'title': "Lista ofert",
+            'description': """Znajdziesz tutaj listę wszystkich ofert dostępnych na serwisie.
+            Każda oferta zaczyna się dokładnie o 00:00 i kończy o 23:59.
+            Zmiana godziny rozpoczęcia jest niemożliwa (przynajmniej na razie)."""
+        }
 
         if current_user.is_authenticated:
-            user = current_user
+            user = {
+                'id': current_user.id,
+                'nick': current_user.nick,
+                'admin': current_user.admin
+            }
 
-        return make_response(render_template('items.html', user=user, items=items, User=User, today_date=today_date), 200)
+        for item in items_data:
+            if today_date >= item.start_date and today_date <= item.end_date:
+                items.append({
+                    'id': item.id,
+                    'name': item.name,
+                    'description': item.description,
+                    'start_date': item.start_date,
+                    'end_date': item.end_date,
+                    'asking_price': item.asking_price,
+                    'current_price': item.current_price,
+                    'owner': User.query.get(item.owner_id).nick
+                })
+
+        return make_response(render_template('item_show_all.html', user=user, info=info, items=items), 200)
 
 
 @api.route('/item/<int:item_id>')
@@ -187,16 +247,42 @@ class ItemOne(Resource):
 
     @api.response(200, 'Success - Item is loaded')
     def get(self, item_id):
-        item = Item.query.get(item_id)
-        user = None
-        today_date = date.today()
+        item_data = Item.query.get(item_id)
         form = NewPriceForm()
+        user = None
+        info = {
+            'title': "Strona oferty",
+            'description': """Znajdują się tu wszytkie informacje na temat oferty oraz możliwość podbijania ceny jeśli jest się zalogowanym."""
+        }
 
         if current_user.is_authenticated:
-            user = current_user
+            user = {
+                'id': current_user.id,
+                'nick': current_user.nick,
+                'admin': current_user.admin
+            }
 
-        if item:
-            return make_response(render_template('item.html', user=user, item=item, User=User, today_date=today_date, form=form), 200)
+        if item_data:
+            item = {
+                    'id': item_data.id,
+                    'name': item_data.name,
+                    'description': item_data.description,
+                    'start_date': item_data.start_date,
+                    'end_date': item_data.end_date,
+                    'asking_price': item_data.asking_price,
+                    'current_price': item_data.current_price,
+                    'owner': User.query.get(item_data.owner_id).nick,
+                    'owner_id': item_data.owner_id
+                }
+
+            if item_data.winner_id:
+                item['winner'] = User.query.get(item_data.winner_id).nick
+                item['winner_id'] = item_data.winner_id
+
+            #if not item_data.images:
+            #    item['images'] = [{ 'file': "_noimage.jpg", 'alt': "Brak zdjęcia" }]
+
+        return make_response(render_template('item_show_one.html', user=user, info=info, item=item, form=form), 200)
 
 
     @api.response(401, 'Unauthorized — Login required')
@@ -207,8 +293,11 @@ class ItemOne(Resource):
         
         if form.validate_on_submit():
             item = Item.query.get(item_id)
-            user = current_user
-            today_date = date.today()
+            user = {
+                'id': current_user.id,
+                'nick': current_user.nick,
+                'admin': current_user.admin
+            }
 
             if item.current_price < form.new_price.data:
                 item.current_price = form.new_price.data
@@ -216,8 +305,9 @@ class ItemOne(Resource):
 
                 database.session.add(item)
                 database.session.commit()
+
+        return redirect(f'{item_id}', 303)
         
-            return make_response(render_template('item.html', user=user, item=item, User=User, today_date=today_date, form=form), 200)
 
 
 @api.route('/items/add')
@@ -229,8 +319,12 @@ class ItemAdd(Resource):
     def get(self):
         user = current_user
         form = AddItemForm()
+        info = {
+            'title': "Dodawanie oferty",
+            'description': """Widzisz formularz dodawania oferty."""
+        }
         
-        return make_response(render_template('add_item.html', user=user, form=form), 200)
+        return make_response(render_template('add_item.html', user=user, info=info, form=form), 200)
 
 
     @api.response(401, 'Unauthorized — Login required')
@@ -275,6 +369,11 @@ class ItemEdit(Resource):
         user = current_user
         item = Item.query.get(item_id)
         today_date = date.today()
+        info = {
+            'title': "Edytuj ofertę",
+            'description': """Widzisz formularz oferty który może zawierać informacje zablokowane
+            np. nie można zmienić daty rozpoczęcia jeśli ta już się rozpoczeła."""
+        }
 
         form = AddItemForm()
         form.name.default = item.name
@@ -283,7 +382,7 @@ class ItemEdit(Resource):
         form.end_date.default = item.end_date
         form.process()
         
-        return make_response(render_template('edit_item.html', user=user, item=item, today_date=today_date, form=form), 200)
+        return make_response(render_template('edit_item.html', user=user, info=info, item=item, today_date=today_date, form=form), 200)
 
 
     @api.response(401, 'Unauthorized — Login required')

@@ -70,7 +70,7 @@ class TestRoutes(TestCase):
         form.process()
 
         response = self.client.post('/register', data=form.data)
-        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.status_code, 303)
 
 
     # Login user
@@ -81,7 +81,7 @@ class TestRoutes(TestCase):
         form.process()
 
         response = self.client.post('/login', data=form.data)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 303)
 
 
     # Show items
@@ -108,7 +108,7 @@ class TestRoutes(TestCase):
         with patch('auction_site.routes.current_user') as mock_user:
             mock_user.id = 1
             response = self.client.post("/items/add", data=form.data)
-            self.assertEqual(response.status_code, 201)
+            self.assertEqual(response.status_code, 303)
 
 
     # Edit item
@@ -122,7 +122,7 @@ class TestRoutes(TestCase):
         with patch('auction_site.routes.current_user') as mock_user:
             mock_user.id = 1
             response = self.client.post(f"/item/edit/{Item.query.first().id}", data=form.data)
-            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.status_code, 303)
 
 
     # Edit user

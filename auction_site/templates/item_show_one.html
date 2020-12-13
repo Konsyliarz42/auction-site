@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container-fluid px-4">
+    
+    <div class="row no-gutters">
+        <div class="col">
+            <!--Name-->
+            <h1 class="text-break pr-4 my-0">{{ item.name }}</h1>
+            <br>
+
+            <div class="container-fluid">
+                <!--Main info about item-->
+                <div class="row">
+                    <div class="col-4">
+                        <strong>Właściciel:</strong>
+                        <p class="text-break">
+                            {{ item.owner }}
+                            <small class="text-muted">Id:{{ item.owner_id }}</small>
+                        </p>
+                    </div>
+
+                    <!--Space-->
+                    <div class="col"></div>
+
+                    <!--Dates-->
+                    <div class="col container">
+                        <strong>Data rozpoczęcia:</strong>
+                        <p>{{ item.start_date }}</p>
+                    </div>
+
+                    <div class="col container">
+                        <strong>Data zakończenia:</strong>
+                        <p>{{ item.end_date }}</p>
+                    </div>
+                </div>
+
+                <!--Description-->
+                <br>
+                <strong>Opis:</strong>
+                {% if not item.description %}
+                    <p class="text-muted">Oferta nie zawiera opisu</p>
+                {% else %}
+                    <p class="text-break">{{ item.description }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!--Form-->
+        <div class="col card text-center my-auto" style="max-width: 512px; max-height: 512px;">
+            {% if item.winner %}
+                <div class="card-header">
+                    <strong>Najwyższą cenę dał:</strong> 
+                    <span class="text-break">
+                        {{ item.winner }}
+                        <small class="text-muted">Id:{{ item.winner_id }}</small>
+                    </span>
+                </div>
+            {% endif %}
+
+            <div class="card-body">
+                <h5 class="card-title">Aktualna cena: {{ item.current_price }}</h5>
+                {% if user %}
+                    <form action="" method="post" class="mt-4">
+                        {{ form.hidden_tag() }}
+                        {{ wtf.form_field(form.new_price) }}
+                        <button type="submit" class="btn btn-block btn-primary">Podbij cenę</button>
+                    </form>
+                {% endif %}
+            </div>
+
+            <div class="card-footer text-muted">Cena wywoławcza: {{ item.asking_price }}</div>
+        </div>
+    </div>
+
+    <!--Images-->
+    <div class="row">
+        {% for image in item.images %}
+            <img src="{{ url_for('static', filename=image.file) }}" alt="{{ image.alt }}" class="col-4 py-4 px-4">
+        {% endfor %}
+    </div>
+    
+    
+</div>
+
+{% endblock %}
