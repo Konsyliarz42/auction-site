@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+    <!--Empty database-->
+    {% if not users %}
+        <div class="container my-4">
+            <blockquote class="blockquote text-center">
+                <h1 class="mb-0 display-4">Niestety w tej chwili nasza baza danych nie posiada użytkowników :(</h1>
+                <span class="text-secondary">Szybko załóż konto i zostań naszym pierwszym użytkownikiem.</span>
+            </blockquote>
+        </div>
+        
+    <!--Common-->
+    {% else %}
+        <div class="container-fluid row no-gutters">
+            {% for u in users %}
+                <div class="col-3 card shadow m-4" style="width: 512px;">
+                    <!--Card header-->
+                    <h4 class="card-header">{{ u.nick }}</h4>
+
+                    <!--Card body-->
+                    <ul class="card-body mx-4 my-auto">
+                        <p class="lead">Imię: <strong>{{ u.first_name or '-' }}</strong></p>
+                        <p class="lead">Nazwisko: <strong>{{ u.last_name or '-'}}</strong></p>
+                        <p class="lead">Data dołączenia: <strong>{{ u.register_date }}</strong></p>
+                        <p class="lead">Posiadane przedmoty: <strong>{{ u.user_items or '-' }}</strong></p>
+                    </ul>
+
+                    <!--Card footer-->
+                    <div class="card-footer text-muted row no-gutters">
+                        {% if user.id == u.id %}
+                            <a href="/user/{{ user.id }}" class="col btn btn-sm btn-outline-primary">Edytuj</a>
+                        {% endif %}
+                        <small class="col text-right my-auto">Id: {{ u.id }}</small>
+                    </div>
+                </div>
+
+                <!--Space-->
+                <div class="col"></div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+{% endblock %}

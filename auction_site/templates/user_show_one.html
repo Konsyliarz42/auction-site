@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!--Hello-->
+<div class="jumbotron bg-transparent">
+    <h1 class="text-center text-break">Witaj {{ user.nick }} co dziś robimy?</h1>
+</div>
+
+
+<div class="container-fluid row no-gutters">
+    <!--Buttons-->
+    <div class="col-2 bg-light p-4 border">
+        <a class="btn btn-block btn-primary">Pokaż moje oferty</a><br>
+        <a class="btn btn-block btn-primary">Przeglądaj oferty</a><br>
+        <a class="btn btn-block btn-primary">Zmień dane</a>
+        <br><br><br>
+        
+        <button type="button" class="btn btn-block btn-danger" data-toggle="modal" data-target="#deleteUser">Usuń konto</button>
+
+        <!--Confirm deleted-->
+        <div class="modal fade" id="deleteUser" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <!--Modal header-->
+                    <div class="modal-header">
+                        <h3>Usunąć konto?</h3>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                     </div>
+
+                    <!--Modal body-->
+                    <div class="modal-body">
+                        <p class="lead">Usunięcie konta spowoduje wylogowanie oraz nieodwolane usunięcie konta wraz z aktywnymi ofertami.</p>
+                    </div>
+
+                    <!--Modal footer-->
+                    <div class="modal-footer">
+                        <form action="" method="POST" class="row">
+                            <input class="form-check-input d-none" type="radio" name="deluser" checked>
+                            <button type="button" class="col btn btn-primary" data-dismiss="modal" style="width: 128px;">Anuluj</button>
+                            <button type="submit" class="col btn btn-danger ml-4" style="width: 128px;">Usuń</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!--Content-->
+    <div class="col border p-4">
+
+    </div>
+</div>
+
+{% endblock %}

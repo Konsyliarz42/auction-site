@@ -69,7 +69,7 @@
                         <a class="nav-item btn btn-outline-info" href="/register">Zarejestruj się</a>
                     </ul>
                 {% else %}
-                    <p class="lead text-white my-auto mr-2">{{ user.nick }}</p>
+                    <p class="lead text-white my-auto mr-2">{{ user.nick[:32] + (user.nick[32:] and '...') }}</p>
                     <form action="/home" method="POST">
                         <button type="submit" class="btn btn-outline-info">Wyloguj</button>
                     </form>   

@@ -144,7 +144,8 @@ class UsersAll(Resource):
 
     @api.response(200, 'Success - List of users is loaded')
     def get(self):
-        users = User.query.all()
+        users_data = User.query.all()
+        users = list()
         user = None
         info = {
             'title': "Lista użytkowników",
@@ -152,9 +153,23 @@ class UsersAll(Resource):
         }
 
         if current_user.is_authenticated:
-            user = current_user
+            user = {
+                'id': current_user.id,
+                'nick': current_user.nick,
+                'admin': current_user.admin
+            }
 
-        return make_response(render_template('users.html', user=user, info=info, users=users, User=User), 200)
+        for u in users_data:
+            users.append({
+                'id': u.id,
+                'nick': u.nick,
+                'first_name': u.first_name,
+                'last_name': u.last_name,
+                'register_date': u.register_date,
+                'user_items': len(u.user_items)
+            })
+
+        return make_response(render_template('user_show_all.html', user=user, info=info, users=users), 200)
 
 
 @api.route('/user/<int:user_id>')
@@ -176,7 +191,7 @@ class UserOne(Resource):
         form.last_name.default = user.last_name
         form.process()
 
-        return make_response(render_template('user.html', user=user, info=info, form=form), 200)
+        return make_response(render_template('user_show_one.html', user=user, info=info, form=form), 200)
 
 
     @api.response(401, 'Unauthorized — Login required')
@@ -190,6 +205,16 @@ class UserOne(Resource):
             'title': "Strona twojego profilu",
             'description': """Znajdziesz tutaj wszytkie informacje o swoim profilu."""
         }
+
+        if request.form.get('deluser'):
+            for item in user.user_items:
+                database.session.delete(item)
+                    
+            database.session.delete(user)
+            database.session.commit()
+            logout_user()
+            
+            return redirect(url_for('home'), 303)
 
         if form.validate_on_submit():
             user.nick = form.nick.data
@@ -208,14 +233,6 @@ class UserOne(Resource):
             database.session.add(user)
             database.session.commit()
 
-            if request.form.get('deluser'):
-                for item in user.user_items:
-                    database.session.delete(item)
-                    
-                database.session.delete(user)
-                database.session.commit()
-                logout_user()
-                return redirect(url_for('home'), 303)
 
         return make_response(render_template('user.html', user=user, info=info, form=form), 200)
 
